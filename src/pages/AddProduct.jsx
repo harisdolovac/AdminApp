@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import "../styles/admin.css";
+
 
 function AddProduct({ table = "products" }) {
   const [products, setProducts] = useState([]);
@@ -129,98 +131,109 @@ function AddProduct({ table = "products" }) {
   }
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>{editingId ? "Edit Product" : "Add New Product"}</h2>
-      <input
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <br />
-      <br />
-      <input
-        placeholder="Price"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-      />
-      <br />
-      <br />
-      <input
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <br />
-      <br />
-      <input type="file" onChange={(e) => setFile(e.target.files[0])} />
-      <br />
-      <br />
-      <button onClick={editingId ? handleUpdate : handleUpload}>
-        {editingId ? "Update Product" : "Upload Product"}
-      </button>
-      {editingId && (
-        <button
-          onClick={resetForm}
-          style={{ marginLeft: "10px", backgroundColor: "#ccc" }}
-        >
-          Cancel
-        </button>
-      )}
+    <div className="admin-container">
+      <div className="admin-header">
+        <div className="flex items-center justify-between">
+          <h1 className="admin-title">Products</h1>
+        </div>
+      </div>
 
-      <h2 style={{ marginTop: "40px" }}>Products</h2>
-      <ul style={{ listStyle: "none", padding: 0 }}>
-        {products.map((item) => (
-          <li
-            key={item.id}
-            style={{
-              border: "1px solid #ccc",
-              padding: "10px",
-              marginBottom: "15px",
-              borderRadius: "5px",
-            }}
-          >
-            <strong>{item.name}</strong> - ${item.price}
-            <br />
-            <em>{item.description}</em>
-            <br />
-            {item.image_url && (
-              <img
-                src={item.image_url}
-                alt={item.name}
-                width={100}
-                style={{ marginTop: "10px" }}
-              />
-            )}
-            <br />
+      <div className="product-upload-form">
+        <h3>Add New Product</h3>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <input
+            className="form-input"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            className="form-input"
+            placeholder="Price"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+          <textarea
+            className="form-textarea"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <div className="file-input-container">
+            <input
+              type="file"
+              id="product-image"
+              className="file-input"
+              onChange={(e) => setFile(e.target.files[0])}
+            />
+            <label htmlFor="product-image">
+              Choose Product Image
+            </label>
+          </div>
+          <div className="btn-group">
             <button
-              onClick={() => deleteProduct(item.id)}
-              style={{ color: "red", marginTop: "10px" }}
+              type="submit"
+              className={`btn ${editingId ? 'btn-secondary' : 'btn-primary'}`}
+              onClick={editingId ? handleUpdate : handleUpload}
             >
-              Delete
+              {editingId ? "Update Product" : "Add Product"}
             </button>
-            <button
-              onClick={() => {
-                setEditingId(item.id);
-                setName(item.name);
-                setPrice(item.price);
-                setDescription(item.description);
-                setFile(null);
-              }}
-              style={{ marginLeft: "10px", marginTop: "10px" }}
-            >
-              Edit
-            </button>
-            {table === "products" && (
-              <button
-                onClick={() => navigate(`/product/${item.id}`)}
-                style={{ marginLeft: "10px", marginTop: "10px" }}
+            {editingId && (
+              <button 
+                className="btn btn-danger" 
+                onClick={resetForm}
               >
-                Add Thumbnails
+                Cancel
               </button>
             )}
-          </li>
+          </div>
+        </form>
+      </div>
+
+      <div className="grid">
+        {products.map((product) => (
+          <div key={product.id} className="card">
+            <img
+              src={product.image_url || 'https://via.placeholder.com/300'}
+              alt={product.name}
+              className="card-image"
+            />
+            <div className="card-content">
+              <h4 className="card-title">{product.name}</h4>
+              <p className="product-price">${product.price}</p>
+              <p className="text-secondary">{product.description}</p>
+              <div className="btn-group">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setEditingId(product.id);
+                    setName(product.name);
+                    setPrice(product.price);
+                    setDescription(product.description);
+                    setFile(null);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={() => deleteProduct(product.id)}
+                >
+                  Delete
+                </button>
+                {table === "products" && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => navigate(`/product/${product.id}`)}
+                  >
+                    Thumbnails
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

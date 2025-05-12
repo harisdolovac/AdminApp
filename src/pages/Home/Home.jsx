@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import CarouselManager from "./CarouselManager";
 import { supabase } from "../../../supabaseClient";
 import { useNavigate } from "react-router-dom";
-import "./Home.css"; // Import the CSS file
+import "../../styles/admin.css";
+
 
 function Home() {
   const [activeTab, setActiveTab] = useState("products");
@@ -23,6 +24,63 @@ function Home() {
     const { data, error } = await supabase.from("home_products").select();
     if (error) console.error("Error fetching home products:", error);
     else setHomeProducts(data);
+  };
+
+  const handleEditProduct = async (product) => {
+    setEditingProduct(product);
+    setName(product.name);
+    setPrice(product.price);
+    setDescription(product.description);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleUpdateProduct = async () => {
+    if (!name || !price || !description) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const updates = { name, price, description };
+    
+    if (file) {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${editingProduct.id}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage.from("images").upload(
+        fileName,
+        file,
+        { upsert: true }
+      );
+
+      if (uploadError) return console.error("Image upload failed:", uploadError);
+
+      const { data: urlData } = supabase.storage
+        .from("images")
+        .getPublicUrl(fileName);
+
+      updates.image_url = urlData.publicUrl;
+    }
+
+    const { error: updateError } = await supabase
+      .from("home_products")
+      .update(updates)
+      .eq("id", editingProduct.id);
+
+    if (updateError) {
+      console.error("Update failed:", updateError);
+      return;
+    }
+
+    // Clear form and reset state
+    setName("");
+    setPrice("");
+    setDescription("");
+    setFile(null);
+    setEditingProduct(null);
+    setUploadProgress(0);
+
+    // Reload products
+    fetchHomeProducts();
   };
 
   const handleUploadProduct = async () => {
@@ -108,117 +166,142 @@ function Home() {
   };
 
   return (
-    <div className="home-container">
-      <h2>Home</h2>
-
-      {/* Product Upload Form */}
-      <div className="product-upload-form">
-        <h3>Upload New Product</h3>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-        />
-        <textarea
-          className="form-input"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-
-        {/* Custom File Input */}
-        <div className="file-input-container">
-          <input
-            type="file"
-            id="file-upload"
-            className="file-input"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <label htmlFor="file-upload" className="file-upload-label">
-            Choose a file
-          </label>
-        </div>
-
-        {/* Upload Progress */}
-        {uploadProgress > 0 && (
-          <div className="progress-container">
-            <div
-              className="progress-bar"
-              style={{ width: `${uploadProgress}%` }}
-            ></div>
-            <span>{uploadProgress}%</span>
+    <div className="admin-container">
+      <div className="admin-header">
+        <div className="flex items-center justify-between">
+          <h1 className="admin-title">Home</h1>
+          <div className="tabs">
+            <button
+              onClick={() => setActiveTab("products")}
+              className={`btn ${activeTab === "products" ? "btn-primary" : "btn-secondary"}`}
+            >
+              Products
+            </button>
+            <button
+              onClick={() => setActiveTab("carousel")}
+              className={`btn ${activeTab === "carousel" ? "btn-primary" : "btn-secondary"}`}
+            >
+              Carousel
+            </button>
           </div>
-        )}
-
-        <button className="upload-button" onClick={handleUploadProduct}>
-          Upload Product
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="tabs">
-        <button
-          className={`tab-button ${activeTab === "products" ? "active" : ""}`}
-          onClick={() => setActiveTab("products")}
-        >
-          Products
-        </button>
-        <button
-          className={`tab-button ${activeTab === "carousel" ? "active" : ""}`}
-          onClick={() => setActiveTab("carousel")}
-        >
-          Carousel
-        </button>
+        </div>
       </div>
 
       {/* Content */}
-      {activeTab === "products" && (
-        <div className="products-list">
-          {homeProducts.map((item) => (
-            <div key={item.id} className="product-card">
-              <img
-                src={item.image_url}
-                alt={item.name}
-                className="product-image"
-              />
-              <h4 className="product-name">{item.name}</h4>
-              <p className="product-price">{item.price} RSD</p>
-              <button
-                className="product-button"
-                onClick={() => navigate(`/home-product/${item.id}`)}
-              >
-                Add Thumbnails
-              </button>
-              <button
-                className="product-button"
-                onClick={() => {
-                  setEditingProduct(item);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              >
-                Edit
-              </button>
-              <button
-                className="product-button delete-button"
-                onClick={() => handleDeleteProduct(item.id)}
-              >
-                Delete
-              </button>
+      {activeTab === "products" ? (
+        <>
+          {/* Product Form */}
+          <div className="product-upload-form">
+            <div className="flex items-center justify-between mb-4">
+              <h3>{editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+              {editingProduct && (
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setEditingProduct(null);
+                    setName("");
+                    setPrice("");
+                    setDescription("");
+                    setFile(null);
+                  }}
+                >
+                  Cancel Edit
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            
+            <input
+              type="text"
+              className="form-input"
+              placeholder="Price"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            <textarea
+              className="form-textarea"
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
 
-      {activeTab === "carousel" && <CarouselManager />}
+            {/* Custom File Input */}
+            <div className="file-input-container">
+              <input
+                type="file"
+                id="file-upload"
+                className="file-input"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+              <label htmlFor="file-upload">
+                Choose Product Image
+              </label>
+            </div>
+
+            {/* Upload Progress */}
+            {uploadProgress > 0 && (
+              <div className="progress-container">
+                <div
+                  className="progress-bar"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+                <span>{uploadProgress}%</span>
+              </div>
+            )}
+
+            <button 
+              className="btn btn-primary" 
+              onClick={editingProduct ? handleUpdateProduct : handleUploadProduct}
+            >
+              {editingProduct ? 'Update Product' : 'Add Product'}
+            </button>
+          </div>
+
+          <div className="grid">
+            {homeProducts.map((item) => (
+              <div key={item.id} className="card">
+                <img
+                  src={item.image_url}
+                  alt={item.name}
+                  className="card-image"
+                />
+                <div className="card-content">
+                  <h4 className="card-title">{item.name}</h4>
+                  <p className="product-price">${item.price}</p>
+                  <div className="btn-group">
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => navigate(`/home-product/${item.id}`)}
+                    >
+                      Add Thumbnails
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => handleEditProduct(item)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteProduct(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <CarouselManager />
+      )}
     </div>
   );
 }

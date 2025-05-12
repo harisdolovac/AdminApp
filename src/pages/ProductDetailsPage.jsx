@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams,useNavigate } from "react-router-dom";
 import { supabase } from "../../supabaseClient";
+import "../styles/admin.css";
 
 export default function AdminProductDetails() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [thumbnails, setThumbnails] = useState([]);
@@ -90,77 +92,80 @@ export default function AdminProductDetails() {
   if (!product) return <p>Loading...</p>;
 
   return (
-    <div style={{ padding: "20px", maxWidth: "700px", margin: "0 auto" }}>
-      <h1>{product.name}</h1>
-      <p>{product.description}</p>
-      <p>
-        <strong>{product.price} RSD</strong>
-      </p>
-
-      <div style={{ marginBottom: "20px" }}>
-        <img
-          src={mainImage}
-          alt="Main product"
-          style={{
-            width: "100%",
-            maxHeight: "400px",
-            objectFit: "contain",
-            borderRadius: "10px",
-          }}
-        />
+    <div className="admin-container">
+      <div className="admin-header">
+        <div className="flex items-center justify-between">
+          <h1 className="admin-title">Product Details</h1>
+          <button
+            onClick={() => window.history.back()}
+            className="btn btn-secondary"
+            type="button"
+          >
+            Back
+          </button>
+        </div>
       </div>
 
-      <h3>Thumbnails</h3>
-      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-        {thumbnails.map((url, idx) => (
-          <div key={idx} style={{ position: "relative" }}>
-            <img
-              src={url}
-              alt={`Thumbnail ${idx + 1}`}
-              onClick={() => setMainImage(url)}
-              style={{
-                width: "100px",
-                height: "100px",
-                objectFit: "cover",
-                cursor: "pointer",
-                border: mainImage === url ? "2px solid blue" : "1px solid #ccc",
-                borderRadius: "6px",
-              }}
-            />
-            <button
-              onClick={() => handleDeleteThumbnail(url)}
-              style={{
-                position: "absolute",
-                top: "2px",
-                right: "2px",
-                background: "red",
-                color: "white",
-                border: "none",
-                borderRadius: "50%",
-                width: "20px",
-                height: "20px",
-                cursor: "pointer",
-              }}
-            >
-              ×
-            </button>
+      <div className="form-container">
+        <div className="form-group">
+          <h2 className="card-title">{product.name}</h2>
+          <p className="product-price">${product.price}</p>
+          <p className="text-secondary">{product.description}</p>
+        </div>
+
+        <div className="upload-container">
+          <img
+            src={mainImage}
+            alt="Main product image"
+            className="preview-image"
+          />
+          <p className="text-secondary mt-2">Click on any thumbnail below to set as main image</p>
+        </div>
+
+        <div className="form-group">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Product Thumbnails</h3>
+            <span className="text-secondary">{thumbnails.length} images</span>
           </div>
-        ))}
-      </div>
 
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={handleAddThumbnail}
-        style={{ display: "none" }}
-      />
-      <button
-        onClick={() => fileInputRef.current.click()}
-        style={{ marginTop: "20px", padding: "10px 20px" }}
-      >
-        Upload Thumbnail
-      </button>
+          <div className="file-input-container">
+            <input
+              type="file"
+              id="thumbnail-upload"
+              accept="image/*"
+              onChange={handleAddThumbnail}
+              ref={fileInputRef}
+              className="file-input"
+              aria-label="Upload thumbnail"
+            />
+            <label htmlFor="thumbnail-upload">
+              Choose Image for Thumbnail
+            </label>
+          </div>
+
+          <div className="carousel-list">
+            {thumbnails.map((url, idx) => (
+              <div key={idx} className="carousel-item">
+                <img
+                  src={url}
+                  alt={`Thumbnail ${idx + 1}`}
+                  onClick={() => setMainImage(url)}
+                  style={{ cursor: "pointer" }}
+                />
+                <button
+                  onClick={() => handleDeleteThumbnail(url)}
+                  className="btn-delete"
+                  title="Delete thumbnail"
+                  aria-label="Delete thumbnail"
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
