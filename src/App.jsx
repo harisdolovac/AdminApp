@@ -5,10 +5,10 @@ import {
   Link,
   Navigate,
 } from "react-router-dom";
-
-import Home from "./pages/Home";
-import AddProduct from "./pages/AddProduct";
+import Home from "./pages/Home/Home";
+import HomeProductDetails from "./pages/Home/HomeProductDetails";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
+import AddProduct from "./pages/AddProduct";
 
 function App() {
   return (
@@ -18,13 +18,19 @@ function App() {
           <Link to="/home" style={{ marginRight: "15px" }}>
             Home
           </Link>
-          <Link to="/add">Add Product</Link>
+          <Link to="/add" style={{ marginRight: "15px" }}>
+            Add Product
+          </Link>
         </nav>
 
         <Routes>
           <Route path="/" element={<Navigate to="/add" />} />
+          {/* home_products flow */}
           <Route path="/home" element={<Home />} />
-          <Route path="/add" element={<AddProduct />} />
+          <Route path="/home-product/:id" element={<HomeProductDetails />} />
+
+          {/* products flow */}
+          <Route path="/add" element={<AddProduct table="products" />} />
           <Route path="/product/:id" element={<ProductDetailsPage />} />
         </Routes>
       </div>

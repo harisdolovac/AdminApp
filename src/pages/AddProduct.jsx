@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import { useNavigate } from "react-router-dom";
 
-function AddProduct() {
+function AddProduct({ table = "products" }) {
   const [products, setProducts] = useState([]);
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
@@ -16,7 +16,7 @@ function AddProduct() {
   }, []);
 
   async function getProducts() {
-    const { data, error } = await supabase.from("products").select();
+    const { data, error } = await supabase.from(table).select();
     if (error) console.error("Fetch failed:", error);
     else setProducts(data);
   }
@@ -28,7 +28,7 @@ function AddProduct() {
     }
 
     const { data: insertData, error: insertError } = await supabase
-      .from("products")
+      .from(table)
       .insert([{ name, price, description }])
       .select()
       .single();
@@ -52,7 +52,7 @@ function AddProduct() {
     const imageUrl = urlData.publicUrl;
 
     const { error: updateError } = await supabase
-      .from("products")
+      .from(table)
       .update({ image_url: imageUrl })
       .eq("id", productId);
 
@@ -90,7 +90,7 @@ function AddProduct() {
     }
 
     const { error } = await supabase
-      .from("products")
+      .from(table)
       .update(updates)
       .eq("id", editingId);
 
@@ -102,7 +102,7 @@ function AddProduct() {
 
   async function deleteProduct(id) {
     const { data } = await supabase
-      .from("products")
+      .from(table)
       .select("image_url, thumbnails")
       .eq("id", id)
       .single();
@@ -115,7 +115,7 @@ function AddProduct() {
       }
     }
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) console.error("Delete failed:", error);
     else getProducts();
   }
@@ -210,12 +210,14 @@ function AddProduct() {
             >
               Edit
             </button>
-            <button
-              onClick={() => navigate(`/product/${item.id}`)}
-              style={{ marginLeft: "10px", marginTop: "10px" }}
-            >
-              Add Thumbnails
-            </button>
+            {table === "products" && (
+              <button
+                onClick={() => navigate(`/product/${item.id}`)}
+                style={{ marginLeft: "10px", marginTop: "10px" }}
+              >
+                Add Thumbnails
+              </button>
+            )}
           </li>
         ))}
       </ul>

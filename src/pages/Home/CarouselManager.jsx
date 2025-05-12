@@ -1,20 +1,19 @@
-// pages/Home.jsx
+// components/CarouselManager.jsx
 import { useEffect, useState } from "react";
-import { supabase } from "../../supabaseClient";
+import { supabase } from "../../../supabaseClient";
 
-const BUCKETS = ["carousel", "carousel2"];
+const BUCKET = "carousel";
 
-function Home() {
-  const [activeTab, setActiveTab] = useState("carousel");
+function CarouselManager() {
   const [file, setFile] = useState(null);
   const [images, setImages] = useState([]);
 
   useEffect(() => {
     fetchImages();
-  }, [activeTab]);
+  }, []);
 
   async function fetchImages() {
-    const { data, error } = await supabase.storage.from(activeTab).list("", {
+    const { data, error } = await supabase.storage.from(BUCKET).list("", {
       limit: 100,
       offset: 0,
       sortBy: { column: "created_at", order: "asc" },
@@ -40,7 +39,7 @@ function Home() {
 
     const fileName = `${Date.now()}-${file.name}`;
     const { error } = await supabase.storage
-      .from(activeTab)
+      .from(BUCKET)
       .upload(fileName, file, { upsert: true });
 
     if (error) {
@@ -52,7 +51,7 @@ function Home() {
   }
 
   async function handleDelete(fileName) {
-    const { error } = await supabase.storage.from(activeTab).remove([fileName]);
+    const { error } = await supabase.storage.from(BUCKET).remove([fileName]);
     if (error) {
       console.error("Delete failed:", error);
     } else {
@@ -61,30 +60,9 @@ function Home() {
   }
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial" }}>
-      <h2>Home – Carousel Image Manager</h2>
+    <div>
+      <h3>Carousel Image Manager</h3>
 
-      {/* Tab Switcher */}
-      <div style={{ marginBottom: "20px" }}>
-        {BUCKETS.map((bucket) => (
-          <button
-            key={bucket}
-            onClick={() => setActiveTab(bucket)}
-            style={{
-              marginRight: "10px",
-              fontWeight: activeTab === bucket ? "bold" : "normal",
-              backgroundColor: activeTab === bucket ? "#ddd" : "#f7f7f7",
-              border: "1px solid #ccc",
-              padding: "5px 10px",
-              borderRadius: "5px",
-            }}
-          >
-            {bucket.toUpperCase()}
-          </button>
-        ))}
-      </div>
-
-      {/* Upload */}
       <input type="file" onChange={(e) => setFile(e.target.files[0])} />
       <br />
       <br />
@@ -95,15 +73,10 @@ function Home() {
         <p style={{ color: "red" }}>Max 5 images allowed in this carousel.</p>
       )}
 
-      {/* Image List */}
-      <h3 style={{ marginTop: "30px" }}>
-        {activeTab.toUpperCase()} Images ({images.length}/5)
-      </h3>
       <ul style={{ listStyle: "none", padding: 0 }}>
         {images.map((img) => {
-          const publicUrl = supabase.storage
-            .from(activeTab)
-            .getPublicUrl(img.name).data.publicUrl;
+          const publicUrl = supabase.storage.from(BUCKET).getPublicUrl(img.name)
+            .data.publicUrl;
           return (
             <li key={img.name} style={{ marginBottom: "15px" }}>
               <img src={publicUrl} alt={img.name} width={120} />
@@ -122,4 +95,4 @@ function Home() {
   );
 }
 
-export default Home;
+export default CarouselManager;
