@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../../../supabaseClient";
+import { compressImage } from "../../utilis/imageCompression";
 import "../../styles/admin.css";
 
 export default function HomeProductDetails() {
@@ -12,6 +13,7 @@ export default function HomeProductDetails() {
     return cached ? JSON.parse(cached) : [];
   });
   const [mainImage, setMainImage] = useState("");
+  const [selectedThumbnailFile, setSelectedThumbnailFile] = useState(null);
   const fileInputRef = useRef();
 
   // Update localStorage whenever thumbnails change
@@ -93,20 +95,26 @@ export default function HomeProductDetails() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Compress the thumbnail image
+    const compressedFile = await compressImage(file, true);
+
+    // Set the selected file for UI feedback
+    setSelectedThumbnailFile(file);
+
     try {
       const fileName = `${id}_${Date.now()}_${file.name}`;
       console.log('Uploading file:', fileName);
 
       const { data, error } = await supabase.storage
-        .from("product-thumbnails")
-        .upload(fileName, file);
+        .from("images")
+        .upload(fileName, compressedFile);
 
       if (error) {
         throw error;
       }
 
       const { data: urlData } = supabase.storage
-        .from("product-thumbnails")
+        .from("images")
         .getPublicUrl(fileName);
 
       const newThumbnailUrl = urlData.publicUrl;
@@ -153,8 +161,13 @@ export default function HomeProductDetails() {
       // Update both state and localStorage
       setThumbnails(updatedThumbnails);
       localStorage.setItem(`thumbnails_${id}`, JSON.stringify(updatedThumbnails));
+      
+      // Reset the selected file
+      setSelectedThumbnailFile(null);
     } catch (error) {
       console.error('Error in handleAddThumbnail:', error);
+      // Reset the selected file even if there's an error
+      setSelectedThumbnailFile(null);
     }
   };
 
@@ -191,6 +204,21 @@ export default function HomeProductDetails() {
         <div className="flex items-center justify-between">
           <h1 className="admin-title">Edit Product</h1>
           <div className="flex gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAddThumbnail}
+              accept="image/*"
+              style={{ display: "none" }}
+              onClick={(e) => {
+                e.target.value = null; // Reset input to allow selecting same file
+              }}
+            />
+            {selectedThumbnailFile && (
+              <div className="image-selected-message">
+                <p>Thumbnail selected. Click to upload.</p>
+              </div>
+            )}
             <button
               onClick={() => window.history.back()}
               className="btn btn-secondary"
@@ -241,21 +269,23 @@ export default function HomeProductDetails() {
 
           <div className="carousel-list">
             {thumbnails.map((url, index) => (
-              <div key={index} className="carousel-item">
-                <img
-                  src={url}
-                  alt={`Thumbnail ${index + 1}`}
-                  onClick={() => setMainImage(url)}
-                  style={{ cursor: "pointer" }}
-                />
+              <div key={index} className="carousel-item-container">
+                <div className="carousel-item">
+                  <img
+                    src={url}
+                    alt={`Thumbnail ${index + 1}`}
+                    onClick={() => setMainImage(url)}
+                    style={{ cursor: "pointer" }}
+                  />
+                </div>
                 <button
                   onClick={() => handleDeleteThumbnail(url)}
-                  className="btn-delete"
+                  className="btn btn-danger"
                   title="Delete thumbnail"
                   aria-label="Delete thumbnail"
                   type="button"
                 >
-                  ×
+                  Delete
                 </button>
               </div>
             ))}

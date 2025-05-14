@@ -14,6 +14,8 @@ function Home() {
   const [description, setDescription] = useState("");
   const [file, setFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -165,8 +167,26 @@ function Home() {
     else fetchHomeProducts();
   };
 
+  const openDeleteModal = (productId) => {
+    setProductToDelete(productId);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setProductToDelete(null);
+    setDeleteModalOpen(false);
+  };
+
+  const confirmDelete = async () => {
+    if (productToDelete) {
+      await handleDeleteProduct(productToDelete);
+      closeDeleteModal();
+    }
+  };
+
   return (
     <div className="admin-container">
+
       <div className="admin-header">
         <div className="flex items-center justify-between">
           <h1 className="admin-title">Home</h1>
@@ -242,6 +262,11 @@ function Home() {
               <label htmlFor="file-upload">
                 Choose Product Image
               </label>
+              {file && (
+              <div className="image-selected-message">
+                <p>Image selected. Now press Add Product</p>
+              </div>
+            )}
             </div>
 
             {/* Upload Progress */}
@@ -281,18 +306,20 @@ function Home() {
                     >
                       Add Thumbnails
                     </button>
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => handleEditProduct(item)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDeleteProduct(item.id)}
-                    >
-                      Delete
-                    </button>
+                    <div className="btn-secondary-container">
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => handleEditProduct(item)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => openDeleteModal(item.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -301,6 +328,24 @@ function Home() {
         </>
       ) : (
         <CarouselManager />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Confirm Delete</h3>
+            <p>Are you sure you want to delete this product?</p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={closeDeleteModal}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

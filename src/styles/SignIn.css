@@ -1,0 +1,63 @@
+/* src/pages/SignIn.css */
+
+.signin-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f1f5f9;
+  }
+  
+  .signin-form {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .signin-form h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #1e293b;
+  }
+  
+  .signin-form label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #334155;
+  }
+  
+  .signin-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .signin-form button {
+    width: 100%;
+    padding: 12px;
+    background-color: #3b82f6;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  
+  .signin-form button:hover {
+    background-color: #2563eb;
+  }
+  
+  .error {
+    color: red;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+  

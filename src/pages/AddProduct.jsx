@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { compressImage } from "../utilis/imageCompression";
 import { useNavigate } from "react-router-dom";
 import "../styles/admin.css";
 
@@ -7,10 +8,13 @@ import "../styles/admin.css";
 function AddProduct({ table = "products" }) {
   const [products, setProducts] = useState([]);
   const [file, setFile] = useState(null);
+  const [compressedFile, setCompressedFile] = useState(null);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,9 +22,9 @@ function AddProduct({ table = "products" }) {
   }, []);
 
   async function getProducts() {
-    const { data, error } = await supabase.from(table).select();
-    if (error) console.error("Fetch failed:", error);
-    else setProducts(data);
+    const { data, error } = await supabase.from(table).select("*");
+    if (error) return console.error("Fetch failed:", error);
+    setProducts(data);
   }
 
   async function handleUpload() {
@@ -43,7 +47,7 @@ function AddProduct({ table = "products" }) {
 
     const { error: uploadError } = await supabase.storage
       .from("images")
-      .upload(fileName, file, { upsert: true });
+      .upload(fileName, compressedFile, { upsert: true });
 
     if (uploadError) return console.error("Image upload failed:", uploadError);
 
@@ -61,8 +65,18 @@ function AddProduct({ table = "products" }) {
     if (updateError)
       return console.error("Update image_url failed:", updateError);
 
+    // Fetch the newly added product
+    const { data: newProduct, error: fetchError } = await supabase
+      .from(table)
+      .select("*")
+      .eq("id", productId)
+      .single();
+
+    if (fetchError) return console.error("Fetch failed:", fetchError);
+
+    // Add the new product to the beginning of the list
+    setProducts((prevProducts) => [newProduct, ...prevProducts]);
     resetForm();
-    getProducts();
   }
 
   async function handleUpdate() {
@@ -79,7 +93,7 @@ function AddProduct({ table = "products" }) {
 
       const { error: uploadError } = await supabase.storage
         .from("images")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, compressedFile, { upsert: true });
 
       if (uploadError)
         return console.error("Image upload failed:", uploadError);
@@ -98,8 +112,19 @@ function AddProduct({ table = "products" }) {
 
     if (error) return console.error("Update failed:", error);
 
+    // Fetch the updated product and add to the list
+    const { data: updatedProduct, error: fetchError } = await supabase
+      .from(table)
+      .select("*")
+      .eq("id", editingId)
+      .single();
+
+    if (fetchError) return console.error("Fetch failed:", fetchError);
+
+    // Add the updated product to the beginning of the list
+    setProducts((prevProducts) => [updatedProduct, ...prevProducts.filter(product => product.id !== editingId)]);
     resetForm();
-    getProducts();
+    alert("Product updated successfully!");
   }
 
   async function deleteProduct(id) {
@@ -122,11 +147,41 @@ function AddProduct({ table = "products" }) {
     else getProducts();
   }
 
+  const openDeleteModal = (id) => {
+    setProductToDelete(id);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setProductToDelete(null);
+    setDeleteModalOpen(false);
+  };
+
+  const confirmDelete = async () => {
+    if (productToDelete) {
+      const { error: deleteError } = await supabase.from(table).delete().eq("id", productToDelete);
+      if (deleteError) console.error("Delete failed:", deleteError);
+      else getProducts();
+      closeDeleteModal();
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Compress the main product image
+    const compressedFile = await compressImage(file, false);
+    setFile(file);
+    setCompressedFile(compressedFile);
+  };
+
   function resetForm() {
     setName("");
     setPrice("");
     setDescription("");
     setFile(null);
+    setCompressedFile(null);
     setEditingId(null);
   }
 
@@ -163,12 +218,19 @@ function AddProduct({ table = "products" }) {
             <input
               type="file"
               id="product-image"
+              onChange={handleImageUpload}
+              accept="image/*"
               className="file-input"
-              onChange={(e) => setFile(e.target.files[0])}
+              style={{ display: 'none' }}
             />
-            <label htmlFor="product-image">
-              Choose Product Image
+            <label htmlFor="product-image" className="file-label">
+              Choose Image
             </label>
+            {file && (
+              <div className="image-selected-message">
+                <p>Image selected. Now press Add Product</p>
+              </div>
+            )}
           </div>
           <div className="btn-group">
             <button
@@ -217,7 +279,7 @@ function AddProduct({ table = "products" }) {
                 </button>
                 <button
                   className="btn btn-danger"
-                  onClick={() => deleteProduct(product.id)}
+                  onClick={() => openDeleteModal(product.id)}
                 >
                   Delete
                 </button>
@@ -234,6 +296,24 @@ function AddProduct({ table = "products" }) {
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Confirm Delete</h3>
+            <p>Are you sure you want to delete this product?</p>
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={closeDeleteModal}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
